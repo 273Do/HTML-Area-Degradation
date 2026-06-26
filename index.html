@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <title>HTML Area Degradation</title>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="https://unpkg.com/98.css" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+
+  <body>
+    <!-- キャプチャ対象 -->
+    <div id="page">
+      <div class="desktop">
+        <!-- メインウィンドウ -->
+        <div class="window win-main">
+          <div class="title-bar">
+            <div class="title-bar-text">HTML Area Degradation</div>
+            <div class="title-bar-controls">
+              <button aria-label="Minimize"></button>
+              <button aria-label="Maximize"></button>
+              <button aria-label="Close"></button>
+            </div>
+          </div>
+          <div class="window-body">
+            <p class="desc">
+              カーソルの動きに連動して、画面上の領域を
+              <strong>JPEG 圧縮＋ダウンスケール</strong>
+              で劣化させた低解像度ボックスとして描画する実験的デモ。 右の
+              Properties からパラメータをリアルタイムに変更できます。
+            </p>
+
+            <fieldset>
+              <legend>概要</legend>
+              <table class="info-table">
+                <tr>
+                  <td>手法</td>
+                  <td>html2canvas スナップ → 縮小 → JPEG 圧縮ループ → 拡大</td>
+                </tr>
+                <tr>
+                  <td>レンダリング</td>
+                  <td>nearest-neighbor（pixelated）</td>
+                </tr>
+                <tr>
+                  <td>形状</td>
+                  <td>16:9 矩形（比率ゆらぎあり）</td>
+                </tr>
+                <tr>
+                  <td>ターゲット</td>
+                  <td>ページ全体</td>
+                </tr>
+              </table>
+            </fieldset>
+
+            <fieldset style="margin-top: 10px">
+              <legend>パラメータ</legend>
+              <div class="param-grid info-table">
+                <div class="param-card">
+                  <div class="param-name">Downscale</div>
+                  <div class="param-val" id="disp-ds">0.50</div>
+                  <div class="param-desc">低いほど粗いピクセル</div>
+                </div>
+                <div class="param-card">
+                  <div class="param-name">JPEG Quality</div>
+                  <div class="param-val" id="disp-q">0.10</div>
+                  <div class="param-desc">低いほどノイジー</div>
+                </div>
+                <div class="param-card">
+                  <div class="param-name">Loops</div>
+                  <div class="param-val" id="disp-loops">3</div>
+                  <div class="param-desc">多いほど劣化蓄積</div>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset style="margin-top: 10px">
+              <legend>アルゴリズム</legend>
+              <ol class="steps">
+                <li>html2canvas でビューポートをスナップショット</li>
+                <li>カーソル位置を中心に 16:9 矩形を切り出す</li>
+                <li>Downscale 率で縮小</li>
+                <li>JPEG 圧縮（jpegQuality）→ デコード を Loops 回繰り返す</li>
+                <li>元サイズへ nearest-neighbor 拡大して画面に重ねる</li>
+              </ol>
+            </fieldset>
+          </div>
+          <div class="status-bar">
+            <p class="status-bar-field" id="stat-rects">Rects: 0</p>
+            <p class="status-bar-field" id="stat-pos">X: — Y: —</p>
+            <p class="status-bar-field">準備完了</p>
+          </div>
+        </div>
+
+        <!-- Properties -->
+        <div class="window win-props">
+          <div class="title-bar">
+            <div class="title-bar-text">Properties</div>
+            <div class="title-bar-controls">
+              <button aria-label="Close"></button>
+            </div>
+          </div>
+          <div class="window-body">
+            <fieldset>
+              <legend>Degradation</legend>
+              <div class="field-row-stacked">
+                <label>Downscale: <strong id="lbl-ds">0.50</strong></label>
+                <input
+                  type="range"
+                  id="ctrl-ds"
+                  min="0.01"
+                  max="1.0"
+                  step="0.01"
+                  value="0.5"
+                />
+              </div>
+              <div class="field-row-stacked" style="margin-top: 8px">
+                <label>JPEG Quality: <strong id="lbl-q">0.10</strong></label>
+                <input
+                  type="range"
+                  id="ctrl-q"
+                  min="0.01"
+                  max="1.0"
+                  step="0.01"
+                  value="0.1"
+                />
+              </div>
+              <div class="field-row-stacked" style="margin-top: 8px">
+                <label>Loops: <strong id="lbl-loops">3</strong></label>
+                <input
+                  type="range"
+                  id="ctrl-loops"
+                  min="1"
+                  max="20"
+                  step="1"
+                  value="3"
+                />
+              </div>
+            </fieldset>
+
+            <fieldset style="margin-top: 8px">
+              <legend>Rect</legend>
+              <div class="field-row-stacked">
+                <label>Base Width: <strong id="lbl-w">200</strong>px</label>
+                <input
+                  type="range"
+                  id="ctrl-w"
+                  min="40"
+                  max="600"
+                  step="10"
+                  value="200"
+                />
+              </div>
+              <div class="field-row-stacked" style="margin-top: 8px">
+                <label>Max Rects: <strong id="lbl-max">4</strong></label>
+                <input
+                  type="range"
+                  id="ctrl-max"
+                  min="1"
+                  max="30"
+                  step="1"
+                  value="4"
+                />
+              </div>
+              <div class="field-row-stacked" style="margin-top: 8px">
+                <label>Interval: <strong id="lbl-iv">200</strong>ms</label>
+                <input
+                  type="range"
+                  id="ctrl-iv"
+                  min="50"
+                  max="2000"
+                  step="50"
+                  value="200"
+                />
+              </div>
+            </fieldset>
+
+            <div class="field-row" style="margin-top: 10px; gap: 6px">
+              <button id="btn-reset" style="flex: 1">Reset</button>
+              <button id="btn-clear" style="flex: 1">Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hint -->
+        <div class="window win-hint">
+          <div class="title-bar">
+            <div class="title-bar-text">Hint</div>
+          </div>
+          <div class="window-body">
+            <p style="margin: 0; font-size: 11px; line-height: 1.6">
+              マウスを画面上で動かすと<br />
+              カーソル周辺がガビガビになります。
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- グリッチオーバーレイ -->
+    <div id="rect-layer"></div>
+    <div id="cur"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="./script.js"></script>
+  </body>
+</html>
