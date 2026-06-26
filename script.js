@@ -22,10 +22,13 @@
   let isMoving = false;
   let moveStopTimer = null;
   let snapCanvas = null;
+  let isCapturing = false;
   let intervalId = null;
 
   // --- スナップショット ---
   function captureScene() {
+    if (isCapturing) return Promise.resolve();
+    isCapturing = true;
     W = window.innerWidth;
     H = window.innerHeight;
     return html2canvas(pageEl, {
@@ -41,19 +44,9 @@
       useCORS: true,
     }).then((c) => {
       snapCanvas = c;
+      isCapturing = false;
     });
   }
-  setTimeout(captureScene, 500);
-
-  let recapTimer = null;
-  document.addEventListener("mousemove", () => {
-    clearTimeout(recapTimer);
-    recapTimer = setTimeout(captureScene, 1500);
-  });
-  window.addEventListener("resize", () => {
-    clearTimeout(recapTimer);
-    recapTimer = setTimeout(captureScene, 500);
-  });
 
   // --- JPEG 劣化ループ ---
   function makeGlitchAsync(sx, sy, sw, sh) {
@@ -106,7 +99,13 @@
 
   // --- Rect 生成 ---
   function spawnRect(cx, cy) {
-    if (!snapCanvas) return;
+    captureScene().then(() => {
+      if (!snapCanvas) return;
+      _spawnRect(cx, cy);
+    });
+  }
+
+  function _spawnRect(cx, cy) {
     const baseW = PARAMS.rectBaseW + (Math.random() - 0.5) * 60;
     const variance = 1 + (Math.random() - 0.5) * PARAMS.rectRatioVariance * 2;
     const rw = Math.round(baseW);
@@ -150,7 +149,9 @@
     if (!moved) moved = true;
     isMoving = true;
     clearTimeout(moveStopTimer);
-    moveStopTimer = setTimeout(() => { isMoving = false; }, 150);
+    moveStopTimer = setTimeout(() => {
+      isMoving = false;
+    }, 150);
   });
 
   // --- インターバル ---
